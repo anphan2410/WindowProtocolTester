@@ -3,7 +3,7 @@
 SerialPortInfoRequest::SerialPortInfoRequest(UHVWorkerVarSet *VarSet, quint32 TimerIntervalInMilisecond) :
     TimerIntervalMSecs(TimerIntervalInMilisecond)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Construct A New State !"));
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Constructed !"));
     if (TimerIntervalInMilisecond > 0)
     {
         timer.setParent(this);
@@ -11,22 +11,23 @@ SerialPortInfoRequest::SerialPortInfoRequest(UHVWorkerVarSet *VarSet, quint32 Ti
         QObject::connect(&timer, &QTimer::timeout
                         , this
                         , [VarSet](){
-                                anIf(UHVWorkerVarSetDbgEn, anAck("Emit UHVWorkerVarSet::ANewPortName!"));
-                                emit VarSet->Out(new QVariant(QVariant::fromValue(UHVWorkerVarSet::ANewPortName)));
-                            }
-                        , static_cast<Qt::ConnectionType>(Qt::AutoConnection | Qt::UniqueConnection));
+                                anIf(UHVWorkerVarSetDbgEn, anAck("Emit requestPortName !"));
+                                emit VarSet->Out(QVariant::fromValue(UHVWorkerVarSet::requestPortName));
+                          }
+                        , UHVWorkerVarSet::uniqueQtConnectionType);
     }
 }
 
 void SerialPortInfoRequest::onEntry(QEvent *)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Enter State ..."));
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Entered !"));
     if (TimerIntervalMSecs > 0)
         timer.start();
 }
 
 void SerialPortInfoRequest::onExit(QEvent *)
 {
+    anIf(UHVWorkerVarSetDbgEn, anTrk("Leave State !"));
     if (TimerIntervalMSecs > 0)
         timer.stop();
 }

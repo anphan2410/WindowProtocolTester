@@ -21,9 +21,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 signals:
-    void Out(QVariant *, QVariant * = Q_NULLPTR);
+    void Out(QVariant, QVariant = QVariant());
 private slots:
-    void In(QVariant * AMessageTopic, QVariant * AMessageContent = Q_NULLPTR);
+    void In(QVariant enumVar, QVariant dataVar = QVariant());
 private:
     Ui::MainWindow *ui;
     WindowProtocol * uhvpump0;

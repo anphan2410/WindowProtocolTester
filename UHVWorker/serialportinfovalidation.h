@@ -10,9 +10,9 @@ class SerialPortInfoValidation : public QState
 {
 public:
     SerialPortInfoValidation(UHVWorkerVarSet *VarSet);
-    ~SerialPortInfoValidation();
 protected:
     void onEntry(QEvent *) override;
+    void onExit(QEvent *) override;
 private:
     UHVWorkerVarSet *VarSetPtr = Q_NULLPTR;
 };

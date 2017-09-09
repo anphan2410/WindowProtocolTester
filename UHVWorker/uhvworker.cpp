@@ -2,7 +2,7 @@
 
 UHVWorker::UHVWorker()
 {
-    anIf(UHVWorkerDbgEn, anTrk("Construct A New UHVWorker !"));
+    anIf(UHVWorkerDbgEn, anTrk("Object Constructed !"));
     WorkingVarSet = new UHVWorkerVarSet(this);
     SerialPortInfoRequest * state0 = new SerialPortInfoRequest(WorkingVarSet);
     state0->setObjectName("SerialPortInfoRequest");
@@ -14,25 +14,30 @@ UHVWorker::UHVWorker()
     state3->setObjectName("SolitaryMessageTransmission");
     MessageReceiveAndEmitOut * state4 = new MessageReceiveAndEmitOut(WorkingVarSet);
     state4->setObjectName("MessageReceiveAndEmitOut");
-    ErrorAnnouncement * state7 = new ErrorAnnouncement(WorkingVarSet);
+    ErrorAnnouncement * state7 = new ErrorAnnouncement(WorkingVarSet,1000);
     state7->setObjectName("ErrorAnnouncement");
 
-    state0->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+    state0->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);    
     state1->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+    state2->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+    state3->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+    state4->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+    state7->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+
     state1->addTransition(new UHVWorkerDirectStateTransition(WorkingVarSet, state0));
     state1->addTransition(new UHVWorkerDirectStateTransition(WorkingVarSet, state2));
-    state2->addTransition(WorkingVarSet->SerialPort, &QSerialPort::errorOccurred, state7);
+
+    state2->addTransition(WorkingVarSet, &UHVWorkerVarSet::ErrorOccurred, state7);
     state2->addTransition(new UHVWorkerDirectStateTransition(WorkingVarSet, state3));
-    state2->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
-    state3->addTransition(WorkingVarSet->SerialPort, &QSerialPort::errorOccurred, state7);
+
+    state3->addTransition(WorkingVarSet, &UHVWorkerVarSet::ErrorOccurred, state7);
     state3->addTransition(new UHVWorkerDirectStateTransition(WorkingVarSet, state4));
-    state3->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
     state3->addTransition(WorkingVarSet, &UHVWorkerVarSet::AFirstPrioritizedCommandMessageReceived, state3);
-    state4->addTransition(WorkingVarSet->SerialPort, &QSerialPort::errorOccurred, state7);
-    state4->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
+
+    state4->addTransition(WorkingVarSet, &UHVWorkerVarSet::ErrorOccurred, state7);
     state4->addTransition(new UHVWorkerDirectStateTransition(WorkingVarSet, state3));
-    state7->addTransition(WorkingVarSet, &UHVWorkerVarSet::PortNameChanged, state1);
-    state7->addTransition(WorkingVarSet, &UHVWorkerVarSet::RestartSerialPortConnection, state1);
+
+    state7->addTransition(WorkingVarSet, &UHVWorkerVarSet::restartSerialPortConnection, state2);
 
     this->addState(state0);
     this->addState(state1);
@@ -43,78 +48,74 @@ UHVWorker::UHVWorker()
     this->setInitialState(state0);
     this->setErrorState(state7);
 
-    connect(WorkingVarSet->SerialPort, &QSerialPort::errorOccurred,
-            this, [&](){ WorkingVarSet->ErrorStatus = UHVWorkerVarSet::SerialPortError;});
     connect(WorkingVarSet, &UHVWorkerVarSet::Out, this, &UHVWorker::Out);
-    connect(state0, &QState::entered,
-            this, [&](){ emit Out(new QVariant(QVariant::fromValue(UHVWorkerVarSet::SerialPortDisconnect)));});
-    connect(this, &QStateMachine::stopped,
-            this, [&](){
-        anIf(UHVWorkerDbgEn, anWarn("UHVWorker Stopped !"));
-        WorkingVarSet->initialize();
-    });
 }
 
-void UHVWorker::In(QVariant *AnUHVWorkerEnumValue, QVariant *rawData)
+void UHVWorker::In(QVariant enumVar, QVariant dataVar)
 {
-    anIf(UHVWorkerDbgEn, anInfo("An External Message Received !"));
-    if (QString(AnUHVWorkerEnumValue->typeName()) == "UHVWorkerVarSet::MessageTopic")
+    anIf(UHVWorkerDbgEn, anTrk("Signal-To-UHVWorker Received !"));
+    QString enumVarTypeName(enumVar.typeName());
+    if (enumVarTypeName == QStringLiteral("UHVWorkerVarSet::Data"))
     {
-        anIf(UHVWorkerDbgEn, anAck("UHVWorkerVarSet::MessageTopic Parsed !"));
-        switch (AnUHVWorkerEnumValue->toInt()) {
-        case UHVWorkerVarSet::ANewPortName:
+        switch (enumVar.toInt()) {
+        case UHVWorkerVarSet::requestPortName:
         {
-            QString newPortName = rawData->toString();
-            if (newPortName != "")
+            anIf(UHVWorkerDbgEn, anInfo("requestPortName"));
+            emit Out(QVariant::fromValue(UHVWorkerVarSet::replyPortName),
+                     QVariant::fromValue(WorkingVarSet->PortName));
+            break;
+        }
+        case UHVWorkerVarSet::replyPortName:
+        {
+            anIf(UHVWorkerDbgEn, anInfo("replyPortName"));
+            QString newPortName = dataVar.toString();
+            if (newPortName.size())
             {
-                anIf(UHVWorkerDbgEn, anAck("ANewPortName Received !"));
-                *(WorkingVarSet->PortName) = newPortName;
-                anVar(*(WorkingVarSet->PortName));
-                anIf(UHVWorkerDbgEn, anInfo("Emit PortNameChanged() ..."));
+                WorkingVarSet->PortName = newPortName;
+                anIf(UHVWorkerDbgEn, anInfo("PortName=" << newPortName));
                 emit WorkingVarSet->PortNameChanged();
             }
             break;
         }
-        case UHVWorkerVarSet::AnUHVPrioritizedCommandMessage:
+        case UHVWorkerVarSet::addAnUHVPrioritizedCommandMessage:
         {
-            anIf(UHVWorkerDbgEn, anAck("AnUHVPrioritizedCommandMessage Received !"));
-            UHVWorkerVarSet::PrioritizedCommandMessage * newCmdMsg
-                    = new UHVWorkerVarSet::PrioritizedCommandMessage(rawData->value<UHVWorkerVarSet::PrioritizedCommandMessage>());
-            if (WorkingVarSet->PendingMessageList->contains(newCmdMsg->first))
+            anIf(UHVWorkerDbgEn, anInfo("addAnUHVPrioritizedCommandMessage"));
+            UHVWorkerVarSet::PrioritizedCommandMessage newCmdMsg = dataVar.value<UHVWorkerVarSet::PrioritizedCommandMessage>();
+            if (WorkingVarSet->pendingMessageList.contains(newCmdMsg.first))
             {
-                WorkingVarSet->PendingMessageList->value(newCmdMsg->first)->append(newCmdMsg->second);
+                WorkingVarSet->pendingMessageList.value(newCmdMsg.first)->append(newCmdMsg.second);
             }
             else
             {
-                WorkingVarSet->PendingMessageList->insert(newCmdMsg->first, new QList<UHVWorkerVarSet::CommandMessage*>({newCmdMsg->second}));
+                WorkingVarSet->pendingMessageList.insert(newCmdMsg.first, new QList<UHVWorkerVarSet::CommandMessage>({newCmdMsg.second}));
             }
-            if (WorkingVarSet->PendingMessageList->size() == 1)
+            if (WorkingVarSet->pendingMessageList.size() == 1)
             {
-                if (WorkingVarSet->PendingMessageList->first()->size() == 1)
+                if (WorkingVarSet->pendingMessageList.first()->size() == 1)
                 {
                     emit WorkingVarSet->AFirstPrioritizedCommandMessageReceived();
                 }
             }
             break;
         }
-        case UHVWorkerVarSet::SerialPortRestart:
+        case UHVWorkerVarSet::disconnectSerialPort:
         {
-            emit WorkingVarSet->RestartSerialPortConnection();
-            break;
-        }
-        case UHVWorkerVarSet::SerialPortDisconnect:
-        {
-            anIf(UHVWorkerDbgEn, anAck("SerialPortDisconnect Received !"));
-            *(WorkingVarSet->PortName) = "";
+            anIf(UHVWorkerDbgEn, anInfo("disconnectSerialPort"));
+            WorkingVarSet->PortName.clear();
             emit WorkingVarSet->PortNameChanged();
             break;
         }
-        case UHVWorkerVarSet::PendingMessageListClear:
+        case UHVWorkerVarSet::restartSerialPort:
         {
-            anIf(UHVWorkerDbgEn, anAck("PendingMessageListClear Received !"));
-            WorkingVarSet->PendingMessageList->clear();
-            anIf(UHVWorkerDbgEn, anInfo("PendingMessageList Cleared !"));
-            emit Out(new QVariant(QVariant::fromValue(UHVWorkerVarSet::PendingMessageListClear)));
+            anIf(UHVWorkerDbgEn, anInfo("restartSerialPort"));
+            emit WorkingVarSet->restartSerialPortConnection();
+            break;
+        }
+        case UHVWorkerVarSet::clearPendingMessageList:
+        {
+            anIf(UHVWorkerDbgEn, anAck("clearPendingMessageList"));
+            WorkingVarSet->pendingMessageList.clear();
+            emit Out(QVariant::fromValue(UHVWorkerVarSet::pendingMessageListCleared));
             break;
         }
         default:

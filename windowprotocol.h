@@ -1,7 +1,7 @@
 #ifndef WINDOWPROTOCOL_H
 #define WINDOWPROTOCOL_H
 
-#define WindowProtocolDbgEn 1
+#define WindowProtocolDbgEn 0
 
 #include <QByteArray>
 #include "anlogger.h"

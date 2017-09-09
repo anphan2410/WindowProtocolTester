@@ -3,18 +3,12 @@
 MessageReceiveAndEmitOut::MessageReceiveAndEmitOut(UHVWorkerVarSet *VarSet, quint16 ReadTimeOutInMilisecond)
     : VarSetPtr(VarSet), TimeOut4ReadInMilisecond(ReadTimeOutInMilisecond)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Construct A New State !"));
-}
-
-MessageReceiveAndEmitOut::~MessageReceiveAndEmitOut()
-{
-    VarSetPtr = Q_NULLPTR;
-    delete VarSetPtr;
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Constructed !"));
 }
 
 void MessageReceiveAndEmitOut::onEntry(QEvent *)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Enter State ..."));
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Entered !"));
     qApp->processEvents();
     if (VarSetPtr->SerialPort->waitForReadyRead(TimeOut4ReadInMilisecond*10))
     {
@@ -23,18 +17,22 @@ void MessageReceiveAndEmitOut::onEntry(QEvent *)
         {
             tmpRead+=VarSetPtr->SerialPort->readAll();
         }
-        VarSetPtr->lastReceivedMessage = new UHVWorkerVarSet::CommandMessage();
-        VarSetPtr->lastReceivedMessage->first = new QByteArray(tmpRead);
-        VarSetPtr->lastReceivedMessage->second = VarSetPtr->lastTransmittedMessage->second;
-        anIf(UHVWorkerVarSetDbgEn, anAck("Successfully To Read Message !"));
-        emit VarSetPtr->Out(new QVariant(QVariant::fromValue(UHVWorkerVarSet::AnUHVPrioritizedCommandMessage)),
-                            new QVariant(QVariant::fromValue(UHVWorkerVarSet::PrioritizedCommandMessage(VarSetPtr->lastTransmittedMessagePriority, VarSetPtr->lastReceivedMessage))));
+        VarSetPtr->lastReceivedMessage = UHVWorkerVarSet::CommandMessage();
+        VarSetPtr->lastReceivedMessage.first = tmpRead;
+        VarSetPtr->lastReceivedMessage.second = VarSetPtr->lastTransmittedMessage.second;
+        anIf(UHVWorkerVarSetDbgEn, anAck("Message Read !"));
+        emit VarSetPtr->Out(QVariant::fromValue(UHVWorkerVarSet::replyUHVPrioritizedCommandMessage),
+                            QVariant::fromValue(UHVWorkerVarSet::PrioritizedCommandMessage(VarSetPtr->lastTransmittedMessagePriority, VarSetPtr->lastReceivedMessage)));
     }
     else
     {
-        anIf(UHVWorkerVarSetDbgEn, anWarn("Reading Message Timed Out !"));
-        VarSetPtr->lastReceivedMessage = Q_NULLPTR;
-        emit VarSetPtr->Out(new QVariant(QVariant::fromValue(UHVWorkerVarSet::MessageReadTimedOut)));
+        anIf(UHVWorkerVarSetDbgEn, anWarn("Ready Read Timed Out !"));
+        emit VarSetPtr->Out(QVariant::fromValue(UHVWorkerVarSet::ReadyReadTimedOut));
     }
     emit VarSetPtr->DirectStateTransitionRequest("SolitaryMessageTransmission");
+}
+
+void MessageReceiveAndEmitOut::onExit(QEvent *)
+{
+    anIf(UHVWorkerVarSetDbgEn, anTrk("Leave State !"));
 }

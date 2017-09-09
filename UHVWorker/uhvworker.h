@@ -22,9 +22,9 @@ class UHVWorker : public QStateMachine
 public:
     UHVWorker();
 signals:    
-    void Out(QVariant *, QVariant * = Q_NULLPTR);
+    void Out(QVariant , QVariant = QVariant());
 public slots:
-    void In(QVariant * AnUHVWorkerEnumValue, QVariant * rawData = Q_NULLPTR);
+    void In(QVariant enumVar, QVariant dataVar = QVariant());
 private:
     UHVWorkerVarSet * WorkingVarSet = Q_NULLPTR;
 };

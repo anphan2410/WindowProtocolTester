@@ -3,7 +3,7 @@
 ErrorAnnouncement::ErrorAnnouncement(UHVWorkerVarSet *VarSet, quint32 TimerIntervalInMilisecond)
     : VarSetPtr(VarSet), TimerIntervalMSecs(TimerIntervalInMilisecond)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Construct A New State !"));
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Constructed !"));
     if (TimerIntervalInMilisecond > 0)
     {
         timer.setParent(this);
@@ -11,23 +11,30 @@ ErrorAnnouncement::ErrorAnnouncement(UHVWorkerVarSet *VarSet, quint32 TimerInter
         QObject::connect(&timer, &QTimer::timeout
                         , this
                         , [VarSet](){
-                                anIf(UHVWorkerVarSetDbgEn, anWarn("Emit Error Status!"));
-                                emit VarSet->Out(new QVariant(QVariant::fromValue(VarSet->ErrorStatus)));
+                                anIf(UHVWorkerVarSetDbgEn,
+                                     anError("Emit <currentUHVWorkerVarSet>->Error!");
+                                      anInfo("ErrorType : " +
+                                               QString(UHVWorkerVarSet::ErrorMetaEnum.valueToKey(static_cast<int>(VarSet->ErrorType))));
+                                      anInfo("ErrorInfo : " + VarSet->ErrorInfo);
+                                     );
+                                emit VarSet->Out(QVariant::fromValue(VarSet->ErrorType),
+                                                   QVariant::fromValue(VarSet->ErrorInfo));
                             }
-                        , static_cast<Qt::ConnectionType>(Qt::AutoConnection | Qt::UniqueConnection));
+                        , UHVWorkerVarSet::uniqueQtConnectionType);
     }
 }
 
 void ErrorAnnouncement::onEntry(QEvent *)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Enter State ..."));
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Entered !"));
     if (TimerIntervalMSecs > 0)
         timer.start();
 }
 
 void ErrorAnnouncement::onExit(QEvent *)
 {
+    anIf(UHVWorkerVarSetDbgEn, anTrk("Leave State !"));
     if (TimerIntervalMSecs > 0)
         timer.stop();
-    VarSetPtr->ErrorStatus = UHVWorkerVarSet::Nothing;
+    VarSetPtr->clearError();
 }

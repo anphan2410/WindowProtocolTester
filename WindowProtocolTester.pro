@@ -34,8 +34,7 @@ SOURCES += \
     UHVWorker/solitarymessagetransmission.cpp \
     UHVWorker/uhvworker.cpp \
     UHVWorker/uhvworkerdirectstatetransition.cpp \
-    UHVWorker/uhvworkervarset.cpp \
-    smallcoordinatordb.cpp
+    UHVWorker/uhvworkervarset.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -50,8 +49,7 @@ HEADERS += \
     UHVWorker/solitarymessagetransmission.h \
     UHVWorker/uhvworker.h \
     UHVWorker/uhvworkerdirectstatetransition.h \
-    UHVWorker/uhvworkervarset.h \
-    smallcoordinatordb.h
+    UHVWorker/uhvworkervarset.h
 
 FORMS += \
         mainwindow.ui

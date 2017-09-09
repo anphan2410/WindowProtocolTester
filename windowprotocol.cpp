@@ -102,11 +102,11 @@ const QString WindowProtocol::getMSGMean() const
     QString tmpCOM=getCOMMean();
     QString tmpDATA=getDATAMean();
     tmpReturn+=getAddress();
-    if (!tmpWIN.isEmpty())
+    if (tmpWIN.size())
         tmpReturn+=QStringLiteral(" ")+tmpWIN;
-    if (!tmpCOM.isEmpty())
+    if (tmpCOM.size())
         tmpReturn+=QStringLiteral(" ")+tmpCOM;
-    if (!tmpDATA.isEmpty())
+    if (tmpDATA.size())
         tmpReturn+=QStringLiteral(" ")+tmpDATA;
     return tmpReturn;
 }

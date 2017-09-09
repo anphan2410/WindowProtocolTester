@@ -10,9 +10,9 @@ class SerialPortConnectionEstablishment : public QState
 {
 public:
     SerialPortConnectionEstablishment(UHVWorkerVarSet * VarSet);
-    ~SerialPortConnectionEstablishment();
 protected:
     void onEntry(QEvent *) override;
+    void onExit(QEvent *) override;
 private:
     UHVWorkerVarSet *VarSetPtr = Q_NULLPTR;
 };

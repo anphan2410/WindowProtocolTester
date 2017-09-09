@@ -3,43 +3,28 @@
 SerialPortInfoValidation::SerialPortInfoValidation(UHVWorkerVarSet *VarSet)
     : VarSetPtr(VarSet)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Construct A New State !"));
-}
-
-SerialPortInfoValidation::~SerialPortInfoValidation()
-{
-    VarSetPtr = Q_NULLPTR;
-    delete VarSetPtr;
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Constructed !"));
 }
 
 void SerialPortInfoValidation::onEntry(QEvent *)
 {
-    anIf(UHVWorkerVarSetDbgEn, anAck("Enter State ..."));
-    if (VarSetPtr->SerialPort)
-    {
-        if (VarSetPtr->SerialPort->isOpen())
-        {
-            VarSetPtr->SerialPort->close();
-            anIf(UHVWorkerVarSetDbgEn, anInfo("SerialPort Disconnected !"));
-        }
-        else
-        {
-            anIf(UHVWorkerVarSetDbgEn, anInfo("SerialPort Already Not Connected !"));
-        }
-    }
-    else
-    {
-        anIf(UHVWorkerVarSetDbgEn, anInfo("SerialPort Already Not Exist !"));
-    }
-    QSerialPortInfo SerialPortInfo(*(VarSetPtr->PortName));
+    anIf(UHVWorkerVarSetDbgEn, anTrk("State Entered !"));
+    qApp->processEvents();
+    VarSetPtr->deleteSerialPort();
+    QSerialPortInfo SerialPortInfo(VarSetPtr->PortName);
     if (SerialPortInfo.isNull())
     {
-        anIf(UHVWorkerVarSetDbgEn, anWarn("SerialPortInfo Is Null !"));
+        anIf(UHVWorkerVarSetDbgEn, anWarn("SerialPortInfo IS NULL !"));
         emit VarSetPtr->DirectStateTransitionRequest("SerialPortInfoRequest");
     }
     else
     {
-        anIf(UHVWorkerVarSetDbgEn, anAck("SerialPortInfo Exists !"));
+        anIf(UHVWorkerVarSetDbgEn, anAck("SerialPortInfo Validated !"));
         emit VarSetPtr->DirectStateTransitionRequest("SerialPortConnectionEstablishment");
     }
+}
+
+void SerialPortInfoValidation::onExit(QEvent *)
+{
+    anIf(UHVWorkerVarSetDbgEn, anTrk("Leave State !"));
 }

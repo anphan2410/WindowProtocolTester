@@ -9,9 +9,9 @@ class SolitaryMessageTransmission : public QState
 {
 public:
     SolitaryMessageTransmission(UHVWorkerVarSet *VarSet, quint16 WriteTimeOutInMilisecond = 100);
-    ~SolitaryMessageTransmission();
 protected:
     void onEntry(QEvent *) override;
+    void onExit(QEvent *) override;
 private:
     UHVWorkerVarSet * VarSetPtr = Q_NULLPTR;    
     quint16 TimeOut4WriteInMilisecond = 0;
